@@ -135,6 +135,7 @@ esac
 if [[ ! -z $compilecommand ]]; then
   echo ">>> Compiling"
   eval $compilecommand
+  echo
 fi
 
 # run
@@ -149,7 +150,6 @@ case $action in
     ;;
   test)
     i=1
-    echo
     for t in $(ls $testsdir/$script/*.in); do
       echo -n ">>> Running test $i"
 
@@ -159,7 +159,7 @@ case $action in
       rightans=$(trim $(cat ${t%.in}.out))
 
       if [[ ! -f ${t%.in}.out ]]; then
-        echo " DONE. $timeofans"
+        echo ". DONE. $timeofans"
 
         echo "> In:"
         cat $t
@@ -169,9 +169,9 @@ case $action in
         echo $ans
         echo
       elif [[ $ans == $rightans ]]; then
-        echo " OK.   $timeofans"
+        echo ". OK.   $timeofans"
       else
-        echo " FAIL. $timeofans"
+        echo ". FAIL. $timeofans"
 
         echo "> In:"
         cat $t
