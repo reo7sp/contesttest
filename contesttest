@@ -23,12 +23,34 @@
 
 set -e
 
+# Reset color
+Color_Off='\033[0m'
+# Colors
+Black='\033[0;90m'
+Red='\033[0;91m'
+Green='\033[0;92m'
+Yellow='\033[0;93m'
+Blue='\033[0;94m'
+Purple='\033[0;95m'
+Cyan='\033[0;96m'
+White='\033[0;97m'
+# Bold colors
+BBlack='\033[1;30m'
+BRed='\033[1;31m'
+BGreen='\033[1;32m'
+BYellow='\033[1;33m'
+BBlue='\033[1;34m'
+BPurple='\033[1;35m'
+BCyan='\033[1;36m'
+BWhite='\033[1;37m'
+
 trim() {
   local var="$*"
   var="${var#"${var%%[![:space:]]*}"}"
   var="${var%"${var##*[![:space:]]}"}"
   echo -n "$var"
 }
+
 
 # detect tests' directory
 if [[ -z $3 ]]; then
@@ -63,29 +85,29 @@ fi
 
 # display help
 if [[ $action == "help" ]]; then
-  echo "contesttest by Oleg Morozenkov"
-  echo "https://github.com/reo7sp/contesttest"
-  echo "Makes running your programs made for programming contests more pleasant."
+  echo -e "$BWhite""contesttest$Color_Off by Oleg Morozenkov"
+  echo    "https://github.com/reo7sp/contesttest"
+  echo    "Makes running your programs made for programming contests more pleasant."
   echo
-  echo "Usage: contesttest SCRIPTNAME [ACTION] [TESTSDIR]"
+  echo -e "$BWhite""Usage:$Color_Off contesttest SCRIPTNAME [ACTION] [TESTSDIR]"
   echo
-  echo "Actions:"
-  echo "    t, test     Compiles and runs your program and then automatically provides tests to stdin and checks for the answer. This is the default action if no one suplied."
-  echo "    r, run      Compiles and runs your program."
-  echo "    d, debug    Compiles the program and then runs the debugger."
-  echo "    h, help     Shows this help text."
+  echo -e "$BWhite""Actions:$Color_Off"
+  echo    "    t, test     Compiles and runs your program and then automatically provides tests to stdin and checks for the answer. This is the default action if no one suplied."
+  echo    "    r, run      Compiles and runs your program."
+  echo    "    d, debug    Compiles the program and then runs the debugger."
+  echo    "    h, help     Shows this help text."
   echo
-  echo "Test format:"
-  echo "    TESTSDIR/SCRIPTNAME/i.in  - it's where test's input is kept,"
-  echo "    TESTSDIR/SCRIPTNAME/i.out - it's where test's answer is kept"
-  echo "        where i is some integer which is non-zero and non-negative."
+  echo -e "$BWhite""Test format:$Color_Off"
+  echo    "    TESTSDIR/SCRIPTNAME/i.in  - it's where test's input is kept,"
+  echo    "    TESTSDIR/SCRIPTNAME/i.out - it's where test's answer is kept"
+  echo    "        where i is some integer which is non-zero and non-negative."
   echo
-  echo "Supported languages:"
-  echo "    C++, C, Python, Java."
-  echo "    If you need a language which is not listed here, write an issue or send a pull request at the github page."
+  echo -e "$BWhite""Supported languages:$Color_Off"
+  echo    "    C++, C, Python, Java."
+  echo    "    If you need a language which is not listed here, write an issue or send a pull request at the github page."
   echo
-  echo "Additional notes:"
-  echo "    If pypy is installed, contesttest will use pypy for python programs. To prohibit it set the enviroment variable NOPYPY to 1."
+  echo -e "$BWhite""Additional notes:$Color_Off"
+  echo    "    If pypy is installed, contesttest will use pypy for python programs. To prohibit it set the enviroment variable NOPYPY to 1."
   exit
 fi
 
@@ -133,7 +155,7 @@ esac
 
 # compile
 if [[ ! -z $compilecommand ]]; then
-  echo ">>> Compiling"
+  echo -e ">>>$BCyan Compiling$Color_Off"
   eval $compilecommand
   echo
 fi
@@ -141,47 +163,57 @@ fi
 # run
 case $action in
   run)
-    echo ">>> Running"
+    echo -e ">>>$BCyan Running$Color_Off"
     eval $runcommand
     ;;
   debug)
-    echo ">>> Starting debugger"
+    echo -e ">>>$BCyan Starting debugger$Color_Off"
     eval $debugcommand
     ;;
   test)
     i=1
     for t in $(ls $testsdir/$script/*.in); do
-      echo -n ">>> Running test $i"
+      echo -n -e ">>>$BCyan Running test $i.$Color_Off"
 
       eval "$( (time (cat $t | eval $runcommand)) 2> >(timeofans=$(cat); declare -p timeofans) > >(ans=$(cat); declare -p ans) )"
       ans=$(trim $ans)
-      timeofans=$(trim $(echo $timeofans | awk '{ if (NR == 2) print $2 }'))
+      timeofans=$(
+        trim $(
+          echo $timeofans |
+            awk "{
+              \$2 = substr(\$2, 3, 5);
+              \$4 = substr(\$4, 3, 5);
+              \$6 = substr(\$6, 3, 5);
+              print \"real: $BYellow\" \$2 \"s$Color_Off, cpu: $BYellow\" \$4+\$6 \"s$Color_Off\"
+            }"
+        )
+      )
       rightans=$(trim $(cat ${t%.in}.out))
 
       if [[ ! -f ${t%.in}.out ]]; then
-        echo ". DONE. $timeofans"
+        echo -e "$BGreen DONE$Color_Off    $timeofans"
 
-        echo "> In:"
+        echo -e ">$Cyan Input:$Color_Off"
         cat $t
         echo
 
-        echo "> Out:"
+        echo -e ">$Cyan Output:$Color_Off"
         echo $ans
         echo
       elif [[ $ans == $rightans ]]; then
-        echo ". OK.   $timeofans"
+        echo -e "$BGreen OK  $Color_Off    $timeofans"
       else
-        echo ". FAIL. $timeofans"
+        echo -e "$BRed FAIL$Color_Off    $timeofans"
 
-        echo "> In:"
+        echo -e ">$Cyan Input:$Color_Off"
         cat $t
         echo
 
-        echo "> Out:"
+        echo -e ">$Cyan Output:$Color_Off"
         echo $ans
         echo
 
-        echo "> Expected:"
+        echo -e ">$Cyan Expected:$Color_Off"
         echo $rightans
         echo
       fi
