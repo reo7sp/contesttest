@@ -1,0 +1,190 @@
+#!/bin/bash
+
+# The MIT License (MIT)
+#
+# Copyright (c) 2015 Oleg Morozenkov
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the "Software"), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+# the Software, and to permit persons to whom the Software is furnished to do so,
+# subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+# FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+# COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+# IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+set -e
+
+trim() {
+  local var="$*"
+  var="${var#"${var%%[![:space:]]*}"}"
+  var="${var%"${var##*[![:space:]]}"}"
+  echo -n "$var"
+}
+
+# detect tests' directory
+if [[ -z $3 ]]; then
+  testsdir=tests
+else
+  testsdir=$3
+fi
+
+# detect action
+if [[ $# == 0 || ($# == 1 && ($1 == "help" || $1 == "h" || $1 == "--help" || $1 == "-h" || $1 == "--h")) ]]; then
+  action=help
+else
+  case $2 in
+    test|t|"")
+      action=test
+      ;;
+    run|r)
+      action=run
+      ;;
+    debug|d)
+      action=debug
+      ;;
+    *)
+      echo "Can't understand action '$2'. Aborting"
+      exit 2
+      ;;
+  esac
+fi
+
+# display help
+if [[ $action == "help" ]]; then
+  echo "contesttest by Oleg Morozenkov"
+  echo "https://github.com/reo7sp/contesttest"
+  echo "Makes running your programs made for programming contests more pleasant."
+  echo
+  echo "Usage: contesttest SCRIPTNAME [ACTION] [TESTSDIR]"
+  echo
+  echo "Actions:"
+  echo "    t, test     Compiles and runs your program and then automatically provides tests to stdin and checks for the answer. This is the default action if no one suplied."
+  echo "    r, run      Compiles and runs your program."
+  echo "    d, debug    Compiles the program and then runs the debugger."
+  echo "    h, help     Shows this help text."
+  echo
+  echo "Test format:"
+  echo "    TESTSDIR/SCRIPTNAME/i.in  - it's where test's input is kept,"
+  echo "    TESTSDIR/SCRIPTNAME/i.out - it's where test's answer is kept"
+  echo "        where i is some integer which is non-zero and non-negative."
+  echo
+  echo "Supported languages:"
+  echo "    C++, C, Python, Java."
+  echo "    If you need a language which is not listed here, write an issue or send a pull request at the github page."
+  echo
+  echo "Additional notes:"
+  echo "    If pypy is installed, contesttest will use pypy for python programs. To prohibit it set the enviroment variable NOPYPY to 1."
+  exit
+fi
+
+# detect script language
+script=${1%.*}
+case $1 in
+  *.cpp)
+    if [[ $action == "debug" ]]; then
+      compilecommand="g++ -Wall -std=c++11 -g -o $script $script.cpp"
+    else
+      compilecommand="g++ -Wall -std=c++11 -O2 -o $script $script.cpp"
+    fi
+    runcommand="./$script"
+    debugcommand="gdb $script"
+    ;;
+  *.c)
+    if [[ $action == "debug" ]]; then
+      compilecommand="gcc -Wall -g -o $script $script.c"
+    else
+      compilecommand="gcc -Wall -O2 -o $script $script.c"
+    fi
+    runcommand="./$script"
+    debugcommand="gdb $script"
+    ;;
+  *.py)
+    compilecommand=""
+    if [[ (-z $NOPYPY || ! $NOPYPY) && $(hash pypy 2>/dev/null) ]]; then
+      runcommand="pypy $script.py"
+      runcommand="pypy -m pdb $script.py"
+    else
+      runcommand="python $script.py"
+      runcommand="python -m pdb $script.py"
+    fi
+    ;;
+  *.java)
+    compilecommand="javac $script.java"
+    runcommand="java -cp . $script"
+    debugcommand="jdb $script"
+    ;;
+  *)
+    echo "Can't understand the type of script '$1'. Aborting"
+    exit 1
+    ;;
+esac
+
+# compile
+if [[ ! -z $compilecommand ]]; then
+  echo ">>> Compiling"
+  eval $compilecommand
+fi
+
+# run
+case $action in
+  run)
+    echo ">>> Running"
+    eval $runcommand
+    ;;
+  debug)
+    echo ">>> Starting debugger"
+    eval $debugcommand
+    ;;
+  test)
+    i=1
+    echo
+    for t in $(ls $testsdir/$script/*.in); do
+      echo -n ">>> Running test $i"
+
+      eval "$( (time $(cat $t | eval $runcommand)) 2> >(timeofans=$(cat); declare -p timeofans) > >(ans=$(cat); declare -p ans) )"
+      ans=$(trim $ans)
+      timeofans=$(trim $(echo $timeofans | awk '{ if (NR == 2) print $2 }'))
+      rightans=$(trim $(cat ${t%.in}.out))
+
+      if [[ ! -f ${t%.in}.out ]]; then
+        echo " DONE. $timeofans"
+
+        echo "> In:"
+        cat $t
+        echo
+
+        echo "> Out:"
+        echo $ans
+        echo
+      elif [[ $ans == $rightans ]]; then
+        echo " OK.   $timeofans"
+      else
+        echo " FAIL. $timeofans"
+
+        echo "> In:"
+        cat $t
+        echo
+
+        echo "> Out:"
+        echo $ans
+        echo
+
+        echo "> Expected:"
+        echo $rightans
+        echo
+      fi
+
+      ((i++))
+    done
+    ;;
+esac
+
