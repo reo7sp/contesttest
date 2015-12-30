@@ -153,7 +153,7 @@ case $action in
     for t in $(ls $testsdir/$script/*.in); do
       echo -n ">>> Running test $i"
 
-      eval "$( (time $(cat $t | eval $runcommand)) 2> >(timeofans=$(cat); declare -p timeofans) > >(ans=$(cat); declare -p ans) )"
+      eval "$( (time (cat $t | eval $runcommand)) 2> >(timeofans=$(cat); declare -p timeofans) > >(ans=$(cat); declare -p ans) )"
       ans=$(trim $ans)
       timeofans=$(trim $(echo $timeofans | awk '{ if (NR == 2) print $2 }'))
       rightans=$(trim $(cat ${t%.in}.out))
