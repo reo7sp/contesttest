@@ -12,9 +12,9 @@ Actions:
     h, help     Shows this help text.
 
 Test format:
-    TESTSDIR/SCRIPTNAME/i.in  - it's where test's input is kept,
-    TESTSDIR/SCRIPTNAME/i.out - it's where test's answer is kept
-        where i is some integer which is non-zero and non-negative.
+    TESTSDIR/SCRIPTNAME/f.in  - it's where test's input is kept,
+    TESTSDIR/SCRIPTNAME/f.out - it's where test's answer is kept
+        where f can be any string.
 
 Supported languages:
     C++, C, Python, Java.

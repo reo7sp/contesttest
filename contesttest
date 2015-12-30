@@ -98,9 +98,9 @@ if [[ $action == "help" ]]; then
   echo    "    h, help     Shows this help text."
   echo
   echo -e "$BWhite""Test format:$Color_Off"
-  echo    "    TESTSDIR/SCRIPTNAME/i.in  - it's where test's input is kept,"
-  echo    "    TESTSDIR/SCRIPTNAME/i.out - it's where test's answer is kept"
-  echo    "        where i is some integer which is non-zero and non-negative."
+  echo    "    TESTSDIR/SCRIPTNAME/f.in  - it's where test's input is kept,"
+  echo    "    TESTSDIR/SCRIPTNAME/f.out - it's where test's answer is kept"
+  echo    "        where f can be any string."
   echo
   echo -e "$BWhite""Supported languages:$Color_Off"
   echo    "    C++, C, Python, Java."
@@ -171,15 +171,13 @@ case $action in
     eval $debugcommand
     ;;
   test)
-    i=1
     for t in $(ls $testsdir/$script/*.in); do
-      echo -n -e ">>>$BCyan Running test $i.$Color_Off"
+      echo -n -e ">>>$BCyan Running test $(basename ${t%.in}).$Color_Off"
 
-      eval "$( (time (cat $t | eval $runcommand)) 2> >(timeofans=$(cat); declare -p timeofans) > >(ans=$(cat); declare -p ans) )"
-      ans=$(trim $ans)
-      timeofans=$(
+      eval "$( (time (cat $t | eval $runcommand)) 2> >(timeofanswer=$(cat); declare -p timeofanswer) > >(answer=$(cat); declare -p answer) )"
+      timeofanswer=$(
         trim $(
-          echo $timeofans |
+          echo $timeofanswer |
             awk "{
               \$2 = substr(\$2, 3, 5);
               \$4 = substr(\$4, 3, 5);
@@ -188,37 +186,35 @@ case $action in
             }"
         )
       )
-      rightans=$(trim $(cat ${t%.in}.out))
+      rightanswer=$(cat ${t%.in}.out)
 
       if [[ ! -f ${t%.in}.out ]]; then
-        echo -e "$BGreen DONE$Color_Off    $timeofans"
+        echo -e "$BGreen DONE$Color_Off    $timeofanswer"
 
         echo -e ">$Cyan Input:$Color_Off"
         cat $t
         echo
 
         echo -e ">$Cyan Output:$Color_Off"
-        echo $ans
+        echo "$answer"
         echo
-      elif [[ $ans == $rightans ]]; then
-        echo -e "$BGreen OK  $Color_Off    $timeofans"
+      elif [[ $(trim $answer) == $(trim $rightanswer) ]]; then
+        echo -e "$BGreen OK  $Color_Off    $timeofanswer"
       else
-        echo -e "$BRed FAIL$Color_Off    $timeofans"
+        echo -e "$BRed FAIL$Color_Off    $timeofanswer"
 
         echo -e ">$Cyan Input:$Color_Off"
         cat $t
         echo
 
         echo -e ">$Cyan Output:$Color_Off"
-        echo $ans
+        echo "$answer"
         echo
 
         echo -e ">$Cyan Expected:$Color_Off"
-        echo $rightans
+        echo "$rightanswer"
         echo
       fi
-
-      ((i++))
     done
     ;;
 esac
