@@ -51,6 +51,9 @@ else
     debug|d)
       action=debug
       ;;
+    help|h)
+      action=help
+      ;;
     *)
       echo "Can't understand action '$2'. Aborting"
       exit 2
