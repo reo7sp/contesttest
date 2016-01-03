@@ -44,13 +44,6 @@ BPurple='\033[1;35m'
 BCyan='\033[1;36m'
 BWhite='\033[1;37m'
 
-trim() {
-  local var="$*"
-  var="${var#"${var%%[![:space:]]*}"}"
-  var="${var%"${var##*[![:space:]]}"}"
-  echo -n "$var"
-}
-
 
 # detect tests' directory
 if [[ -z $3 ]]; then
@@ -89,7 +82,7 @@ if [[ $action == "help" ]]; then
   echo -e "$BWhite""Usage:$Color_Off contesttest SCRIPTNAME [ACTION] [TESTSDIR]"
   echo
   echo -e "$BWhite""Actions:$Color_Off"
-  echo    "    t, test     Compiles and runs your program and then automatically provides tests to stdin and checks for the answer. This is the default action if no one suplied."
+  echo    "    t, test     Compiles and runs your program and then automatically provides tests to stdin. This is the default action if no one suplied."
   echo    "    r, run      Compiles and runs your program."
   echo    "    d, debug    Compiles the program and then runs the debugger."
   echo
@@ -182,7 +175,7 @@ esac
 
 # compile
 if [[ ! -z $compilecommand ]]; then
-  echo -e ">>>$BCyan Compiling$Color_Off"
+  echo -e ">>>$BGreen Compiling$Color_Off"
   eval $compilecommand
   echo
 fi
@@ -190,56 +183,42 @@ fi
 # run
 case $action in
   run)
-    echo -e ">>>$BCyan Running$Color_Off"
+    echo -e ">>>$BGreen Running$Color_Off"
     eval $runcommand
     ;;
   debug)
-    echo -e ">>>$BCyan Starting debugger$Color_Off"
+    echo -e ">>>$BGreen Starting debugger$Color_Off"
     eval $debugcommand
     ;;
   test)
     for t in $(ls $testsdir/$script/*.in); do
-      echo -n -e ">>>$BCyan Running test $(basename ${t%.in}).$Color_Off"
+      echo -n -e ">>>$BGreen Running test $(basename ${t%.in}).$Color_Off"
 
       eval "$( (time (cat $t | eval $runcommand)) 2> >(timeofanswer=$(cat); declare -p timeofanswer) > >(answer=$(cat); declare -p answer) )"
       timeofanswer=$(
-        trim $(
-          echo $timeofanswer |
-            awk "{
-              \$2 = substr(\$2, 3, 5);
-              \$4 = substr(\$4, 3, 5);
-              \$6 = substr(\$6, 3, 5);
-              print \"real: $BYellow\" \$2 \"s$Color_Off, cpu: $BYellow\" \$4+\$6 \"s$Color_Off\"
-            }"
-        )
+        echo $timeofanswer |
+          awk "{
+            \$2 = substr(\$2, 3, 5);
+            \$4 = substr(\$4, 3, 5);
+            \$6 = substr(\$6, 3, 5);
+            print \"real: $BYellow\" \$2 \"s$Color_Off, cpu: $BYellow\" \$4+\$6 \"s$Color_Off\"
+          }"
       )
-      rightanswer=$(cat ${t%.in}.out)
 
-      if [[ ! -f ${t%.in}.out ]]; then
-        echo -e "$BGreen DONE$Color_Off    $timeofanswer"
+      echo -e " $timeofanswer"
 
-        echo -e ">$Cyan Input:$Color_Off"
-        cat $t
-        echo
+      echo -e ">$Cyan Input:$Color_Off"
+      cat $t
+      echo
+      echo
 
-        echo -e ">$Cyan Output:$Color_Off"
-        echo "$answer"
-        echo
-      elif [[ $(trim $answer) == $(trim $rightanswer) ]]; then
-        echo -e "$BGreen OK  $Color_Off    $timeofanswer"
-      else
-        echo -e "$BRed FAIL$Color_Off    $timeofanswer"
+      echo -e ">$Cyan Output:$Color_Off"
+      echo "$answer"
+      echo
 
-        echo -e ">$Cyan Input:$Color_Off"
-        cat $t
-        echo
-
-        echo -e ">$Cyan Output:$Color_Off"
-        echo "$answer"
-        echo
-
+      if [[ -f ${t%.in}.out ]]; then
         echo -e ">$Cyan Expected:$Color_Off"
-        echo "$rightanswer"
+        cat ${t%.in}.out
         echo
       fi
     done

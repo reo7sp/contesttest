@@ -6,7 +6,7 @@ Makes running your programs made for programming contests more pleasant.
 Usage: contesttest SCRIPTNAME [ACTION] [TESTSDIR]
 
 Actions:
-    t, test     Compiles and runs your program and then automatically provides tests to stdin and checks for the answer. This is the default action if no one suplied.
+    t, test     Compiles and runs your program and then automatically provides tests to stdin. This is the default action if no one suplied.
     r, run      Compiles and runs your program.
     d, debug    Compiles the program and then runs the debugger.
 
