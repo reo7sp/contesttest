@@ -60,7 +60,7 @@ else
 fi
 
 # detect action
-if [[ $# == 0 || ($# == 1 && ($1 == "help" || $1 == "h" || $1 == "--help" || $1 == "-h" || $1 == "--h")) ]]; then
+if [[ $# == 0 || ($# == 1 && ($1 == "help" || $1 == "--help" || $1 == "-h" || $1 == "--h")) ]]; then
   action=help
 else
   case $2 in
@@ -72,9 +72,6 @@ else
       ;;
     debug|d)
       action=debug
-      ;;
-    help|h)
-      action=help
       ;;
     *)
       echo "Can't understand action '$2'. Aborting"
@@ -95,7 +92,6 @@ if [[ $action == "help" ]]; then
   echo    "    t, test     Compiles and runs your program and then automatically provides tests to stdin and checks for the answer. This is the default action if no one suplied."
   echo    "    r, run      Compiles and runs your program."
   echo    "    d, debug    Compiles the program and then runs the debugger."
-  echo    "    h, help     Shows this help text."
   echo
   echo -e "$BWhite""Test format:$Color_Off"
   echo    "    TESTSDIR/SCRIPTNAME/f.in  - it's where test's input is kept,"
@@ -112,9 +108,44 @@ if [[ $action == "help" ]]; then
 fi
 
 # detect script language
-script=${1%.*}
+langautodetected=0
 case $1 in
   *.cpp)
+    lang=cpp
+    ;;
+  *.c)
+    lang=c
+    ;;
+  *.py)
+    lang=py
+    ;;
+  *.java)
+    lang=java
+    ;;
+  *)
+    langautodetected=1
+    langs=(cpp c py java)
+    for l in "${langs[@]}"; do
+      if [[ -f "$1.$l" ]]; then
+        lang=$l
+        break
+      fi
+    done
+    if [[ -z $lang ]]; then
+      echo "Can't understand the type of script '$1'. Aborting"
+      exit 1
+    fi
+    ;;
+esac
+
+if $langautodetected; then
+  script=$1
+else
+  script=${1%.*}
+fi
+
+case $lang in
+  cpp)
     if [[ $action == "debug" ]]; then
       compilecommand="g++ -Wall -std=c++11 -g -o $script $script.cpp"
     else
@@ -123,7 +154,7 @@ case $1 in
     runcommand="./$script"
     debugcommand="gdb $script"
     ;;
-  *.c)
+  c)
     if [[ $action == "debug" ]]; then
       compilecommand="gcc -Wall -g -o $script $script.c"
     else
@@ -132,7 +163,7 @@ case $1 in
     runcommand="./$script"
     debugcommand="gdb $script"
     ;;
-  *.py)
+  py)
     compilecommand=""
     if [[ (-z $NOPYPY || ! $NOPYPY) && $(hash pypy 2>/dev/null) ]]; then
       runcommand="pypy $script.py"
@@ -142,14 +173,10 @@ case $1 in
       runcommand="python -m pdb $script.py"
     fi
     ;;
-  *.java)
+  java)
     compilecommand="javac $script.java"
     runcommand="java -cp . $script"
     debugcommand="jdb $script"
-    ;;
-  *)
-    echo "Can't understand the type of script '$1'. Aborting"
-    exit 1
     ;;
 esac
 

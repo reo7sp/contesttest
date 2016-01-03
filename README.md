@@ -9,7 +9,6 @@ Actions:
     t, test     Compiles and runs your program and then automatically provides tests to stdin and checks for the answer. This is the default action if no one suplied.
     r, run      Compiles and runs your program.
     d, debug    Compiles the program and then runs the debugger.
-    h, help     Shows this help text.
 
 Test format:
     TESTSDIR/SCRIPTNAME/f.in  - it's where test's input is kept,
