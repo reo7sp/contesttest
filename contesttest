@@ -210,7 +210,6 @@ case $action in
       echo -e ">$Cyan Input:$Color_Off"
       cat $t
       echo
-      echo
 
       echo -e ">$Cyan Output:$Color_Off"
       echo "$answer"
