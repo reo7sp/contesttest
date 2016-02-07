@@ -160,10 +160,10 @@ case $lang in
     compilecommand=""
     if [[ (-z $NOPYPY || ! $NOPYPY) && $(hash pypy 2>/dev/null) ]]; then
       runcommand="pypy $script.py"
-      runcommand="pypy -m pdb $script.py"
+      debugcommand="pypy -m pdb $script.py"
     else
       runcommand="python $script.py"
-      runcommand="python -m pdb $script.py"
+      debugcommand="python -m pdb $script.py"
     fi
     ;;
   java)
